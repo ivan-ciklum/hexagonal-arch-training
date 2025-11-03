@@ -698,11 +698,11 @@ Your Core is protected, decoupled, and visible. Mission accomplished! But rememb
        - Hexagonal architecture focuses on **decoupling dependencies**, not enforcing a rich domain model.
 
 2.  **Why DDD Often Layers on Top**  
-       - Many teams adopt **Domain-Driven Design patterns** on top of hexagonal architecture to make the domain more expressive:  
-         - Encapsulate invariants inside entities  
-         - Use **Value Objects** for meaningful concepts  
-         - Avoid primitive obsession (Strongly-Typed IDs, specialized types for names, etc.)  
-         - Implement domain events and aggregates  
-       - DDD complements hexagonal architecture, but it’s optional. Hexagonal works fine with an **anaemic domain**.
+   - Many teams adopt **Domain-Driven Design patterns** on top of hexagonal architecture to make the domain more expressive:  
+     - Encapsulate invariants inside entities  
+     - Use **Value Objects** for meaningful concepts  
+     - Avoid primitive obsession (Strongly-Typed IDs, specialized types for names, etc.)  
+     - Implement domain events and aggregates  
+   - DDD complements hexagonal architecture, but it’s optional. Hexagonal works fine with an **anaemic domain**.
 
 -----
