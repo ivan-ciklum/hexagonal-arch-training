@@ -693,9 +693,9 @@ Your Core is protected, decoupled, and visible. Mission accomplished! But rememb
 ## Important Notes
 
 1.  **Hexagonal ≠ 100% Clean Domain**  
-       - Even when you implement ports and adapters perfectly, your domain can still be **anaemic**.  
-       - Business rules may remain in services or use cases rather than inside entities.  
-       - Hexagonal architecture focuses on **decoupling dependencies**, not enforcing a rich domain model.
+    - Even when you implement ports and adapters perfectly, your domain can still be **anaemic**.  
+    - Business rules may remain in services or use cases rather than inside entities.  
+    - Hexagonal architecture focuses on **decoupling dependencies**, not enforcing a rich domain model.
 
 2.  **Why DDD Often Layers on Top**  
    - Many teams adopt **Domain-Driven Design patterns** on top of hexagonal architecture to make the domain more expressive:  
