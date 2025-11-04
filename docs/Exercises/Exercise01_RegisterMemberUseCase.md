@@ -23,13 +23,13 @@ Follow these steps to implement the **Register Member** use case:
    - The use case should handle the process of registering a new member.
 
 2. **Create the API Adapter**
-   - Add a new project: `Adapters/Adapter.Api`.
+   - Add a new project: `Adapters/Adapter.Api`. If it's already there, use it.
    - Implement a **Minimal API** endpoint that calls the `RegisterMember` use case through **dependency injection**.
    - This API acts as your **input adapter**.
 
 3. **Create the Output Port**
    - Define the interface (e.g., `IMemberRepository`) inside `Core/OutputPorts`.
-   - Implement the interface in a new project: `Adapters/Adapter.PostgreSQL`.
+   - Implement the interface in a new project: `Adapters/Adapter.PostgreSQL`. If it's already there, use it.
    - Make your domain entities navigable for EF and create the corresponding EF configuration.
 
 4. **Adapter Communication (Temporary Exception)**
@@ -42,7 +42,7 @@ Follow these steps to implement the **Register Member** use case:
      (Yes, we know... but you’ll fix that soon 😉)
 
 6. **Unit Tests**
-   - You’ll receive a **Core test project** using **NUnit**.
+   - You’ll receive a **Core test project** using **NUnit**. If it's already there, use it.
    - The tests should focus **only on Core logic** — no real database.  
    - Use an `Adapter.InMemoryData` implementation for your tests.  
    - Validate that your use case behaves correctly under different scenarios.
