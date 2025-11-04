@@ -226,9 +226,9 @@ Create a fork of this repository and complete the exercises to unlock the full p
 
 Core training modules include:
 
-  - [Exercise 01: Foundational architecture](Docs/Exercises/Exercise01_RegisterMemberUseCase.md)
-  - [Exercise 02: Composition and hosting](Docs/Exercises/Exercise02_addHost.md)
-  - [Exercise 03: Persistence and Consistency](Docs/Exercises/Exercise03_UnitOfWork.md)
+  - [Exercise 01: Foundational architecture](docs/Exercises/Exercise01_RegisterMemberUseCase.md)
+  - [Exercise 02: Composition and hosting](docs/Exercises/Exercise02_addHost.md)
+  - [Exercise 03: Persistence and Consistency](docs/Exercises/Exercise03_UnitOfWork.md)
 
 -----
 
