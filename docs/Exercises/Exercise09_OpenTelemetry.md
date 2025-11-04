@@ -93,10 +93,10 @@ Now...... You can [move like Jagger 🕺](https://www.youtube.com/watch?v=suRsxp
   aspire-dashboard:
     image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
     container_name: aspire-dashboard
-    # Mapea los puertos de la UI (18888) y el OTLP (18889)
+    # Map UI port (18888) and OTLP port (18889)
     ports:
       - "18888:18888" 
-      - "18889:18889" # Puerto OTLP (gRPC) para recibir datos
+      - "18889:18889" # OTLP (gRPC) Port to receive data
     restart: unless-stopped
   ```
 
