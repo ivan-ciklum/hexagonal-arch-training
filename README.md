@@ -338,9 +338,9 @@ If you want to dig deeper — and you should — here are some solid resources:
 
 Please, follow the instructions below to continue your training:
 
-* 🧩 [Create a gRPC adapter](Docs/Exercises/Exercise04_addgRPC.md)
-* ⚡ [Add a distributed cache port](Docs/Exercises/Exercise05_addDistributedCachePort.md)
-* 📬 [Add a messaging output](Docs/Exercises/Exercise06_addPublisherPort.md)
+* 🧩 [Create a gRPC adapter](docs/Exercises/Exercise04_addgRPC.md)
+* ⚡ [Add a distributed cache port](docs/Exercises/Exercise05_addDistributedCachePort.md)
+* 📬 [Add a messaging output](docs/Exercises/Exercise06_addPublisherPort.md)
 
 No heavy theory on cache or messaging — active developers already possess this transversal knowledge.
 Just dive straight into the implementation! 💪
@@ -396,7 +396,7 @@ It’s not as fancy as full-blown CQRS with separate models and event streams, b
 -----
 
 ### 🚨 Adaptation Required
-You are not going deeper into CQRS theory here, as it's covered in another module. [In this exercise](Docs/Exercises/Exercise07_CQRS.md), you'll create two separate hosts (Query/Command) sharing one database and configure Docker Compose to run multiple instances for horizontal scaling.
+You are not going deeper into CQRS theory here, as it's covered in another module. [In this exercise](docs/Exercises/Exercise07_CQRS.md), you'll create two separate hosts (Query/Command) sharing one database and configure Docker Compose to run multiple instances for horizontal scaling.
 
 
 ## 🧩 Reverse Proxy + CQRS: A Friendly Intro
@@ -567,7 +567,7 @@ Here’s a mix of docs, tutorials, and videos to get you from zero to YARP hero:
 
 ### 🚨 Adaptation Required
 
-Please, follow the instructions to [create a YARP reverse proxy](Docs/Exercises/Exercise08_addReverseProxy.md) When you finish, you'll have a single entry point to route traffic to your command and query hosts, no matter how many instances you have running of each.
+Please, follow the instructions to [create a YARP reverse proxy](docs/Exercises/Exercise08_addReverseProxy.md) When you finish, you'll have a single entry point to route traffic to your command and query hosts, no matter how many instances you have running of each.
 
 -----
 
@@ -682,7 +682,7 @@ Once this is in place:
 
 ### 🚨 Adaptation Required
 
-Please, follow the instructions to [add OTel to the solution](Docs/Exercises/Exercise09_OpenTelemetry.md).
+Please, follow the instructions to [add OTel to the solution](docs/Exercises/Exercise09_OpenTelemetry.md).
 When you finish, you’ll forge **one telemetry to rule them all, one telemetry to find them, one telemetry to bring them all and in the darkness bind them** — or, you know, just centralize your observability. 😄
 
 ----
