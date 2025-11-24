@@ -1,3 +1,5 @@
+using ClubExample.Adapter.Api.Endpoints;
+using ClubExample.Adapter.PostgreSQL.Repositories;
 using ClubExample.Core.Domain;
 
 namespace Architecture.UnitTest;
@@ -13,6 +15,6 @@ public class SolutionTypes
     public static readonly string AdapterPostgreSQLNamespace = "ClubExample.Adapter.PostgreSQL";
 
     public static readonly System.Reflection.Assembly CoreAssembly = typeof(Club).Assembly;
-    public static readonly System.Reflection.Assembly AdapterApiAssembly = typeof(ClubExample.Adapter.Api.IMarkInterface).Assembly;
-    public static readonly System.Reflection.Assembly AdapterPostgreSQLAssembly = typeof(ClubExample.Adapter.PostgreSQL.OneRepository).Assembly;
+    public static readonly System.Reflection.Assembly AdapterApiAssembly = typeof(MemberEndpoints).Assembly;
+    public static readonly System.Reflection.Assembly AdapterPostgreSQLAssembly = typeof(MemberRepository).Assembly;
 }

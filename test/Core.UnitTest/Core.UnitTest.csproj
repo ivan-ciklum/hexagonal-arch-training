@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Core/Core.csproj" />
+    <ProjectReference Include="..\Adapters\Adapter.InMemoryData\Adapter.InMemoryData.csproj" />
   </ItemGroup>
 
   <ItemGroup>
