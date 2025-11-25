@@ -34,5 +34,21 @@ internal sealed class MemberConfiguration : IEntityTypeConfiguration<Member>
         builder.HasIndex(m => new { m.Name, m.ClubId })
             .IsUnique()
             .HasDatabaseName("IX_Members_Name_ClubId");
+
+        // Configure the relationship with Subscription
+        // This tells EF Core that Member depends on Subscription
+        // EF Core will now insert Subscription first, then Member
+        builder.HasOne<Subscription>()
+            .WithMany()
+            .HasForeignKey(m => m.SubscriptionId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("FK_Members_Subscriptions");
+
+        // Configure the relationship with Club
+        builder.HasOne<Club>()
+            .WithMany()
+            .HasForeignKey(m => m.ClubId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("FK_Members_Clubs");
     }
 }

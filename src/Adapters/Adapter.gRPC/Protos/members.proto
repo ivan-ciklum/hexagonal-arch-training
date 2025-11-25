@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+option csharp_namespace = "ClubExample.Adapter.gRPC";
+
+package clubmanagement;
+
+// Service definition for Member operations
+service MemberService {
+  // Registers a new member in a club
+  rpc RegisterMember (RegisterMemberRequest) returns (RegisterMemberResponse);
+}
+
+// Request message for registering a new member
+message RegisterMemberRequest {
+  string club_id = 1;          // GUID as string
+  string name = 2;             // Member name
+  string email = 3;            // Member email
+  string subscription_type = 4; // Type of subscription (e.g., "Monthly", "Yearly")
+}
+
+// Response message after registering a member
+message RegisterMemberResponse {
+  string member_id = 1;                 // GUID as string
+  string subscription_id = 2;           // GUID as string
+  string subscription_start_date = 3;   // ISO 8601 format
+  string subscription_end_date = 4;     // ISO 8601 format
+}

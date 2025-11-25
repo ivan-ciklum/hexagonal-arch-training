@@ -9,7 +9,9 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\Adapters\Adapter.Api\Adapter.Api.csproj" />
+		<ProjectReference Include="..\..\src\Adapters\Adapter.gRPC\Adapter.gRPC.csproj" />
 		<ProjectReference Include="..\..\src\Adapters\Adapter.PostgreSQL\Adapter.PostgreSQL.csproj" />
+		<ProjectReference Include="..\..\src\Adapters\Adapter.Redis\Adapter.Redis.csproj" />
 		<ProjectReference Include="..\..\src\Core\Core.csproj" />
 	</ItemGroup>
 

@@ -1,5 +1,6 @@
 using ClubExample.Adapter.Api.Endpoints;
 using ClubExample.Adapter.PostgreSQL.Repositories;
+using ClubExample.Adapter.Redis.Repositories;
 using ClubExample.Core.Domain;
 
 namespace Architecture.UnitTest;
@@ -13,8 +14,10 @@ public class SolutionTypes
     public static readonly string CoreUseCasesNamespace = "ClubExample.Core.UseCases";
     public static readonly string AdapterApiNamespace = "ClubExample.Adapter.Api";
     public static readonly string AdapterPostgreSQLNamespace = "ClubExample.Adapter.PostgreSQL";
+    public static readonly string AdapterRedisNamespace = "ClubExample.Adapter.Redis";
 
     public static readonly System.Reflection.Assembly CoreAssembly = typeof(Club).Assembly;
     public static readonly System.Reflection.Assembly AdapterApiAssembly = typeof(MemberEndpoints).Assembly;
     public static readonly System.Reflection.Assembly AdapterPostgreSQLAssembly = typeof(MemberRepository).Assembly;
+    public static readonly System.Reflection.Assembly AdapterRedisAssembly = typeof(RedisCacheRepository).Assembly;
 }

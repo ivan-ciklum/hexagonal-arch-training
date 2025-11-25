@@ -52,6 +52,7 @@ public class CoreRulesTest
     public void Repository_Interfaces_Should_Only_Expose_Methods_Starting_With_Get()
     {
         // Get all repository interfaces from Core.OutputPorts
+        // Exclude ICacheRepository as it's a special type that requires write/delete operations
         var repositoryInterfaces = Types.InAssembly(SolutionTypes.CoreAssembly)
             .That()
             .ResideInNamespace(SolutionTypes.CoreOutputPortsNamespace)
@@ -59,7 +60,8 @@ public class CoreRulesTest
             .AreInterfaces()
             .And()
             .HaveNameEndingWith("Repository")
-            .GetTypes();
+            .GetTypes()
+            .Where(t => t.Name != "ICacheRepository"); // Cache repositories need Set/Remove operations
 
         var violatingMethods = new List<string>();
 
@@ -78,7 +80,7 @@ public class CoreRulesTest
         }
 
         Assert.That(violatingMethods, Is.Empty,
-            $"Repository interfaces should only expose methods that begin with 'Get'. " +
+            $"Repository interfaces (except ICacheRepository) should only expose methods that begin with 'Get'. " +
             $"Violating methods: {string.Join(", ", violatingMethods)}");
     }
 }

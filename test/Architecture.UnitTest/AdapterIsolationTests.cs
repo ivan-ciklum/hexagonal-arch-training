@@ -47,8 +47,9 @@ public class AdapterIsolationTests
             .Should()
             .NotHaveDependencyOnAny(
                 SolutionTypes.AdapterPostgreSQLNamespace,
+                SolutionTypes.AdapterRedisNamespace,
                 "ClubExample.Adapter.InMemoryData",
-                "ClubExample.Adapter.Redis",
+                "ClubExample.Adapter.gRPC",
                 "ClubExample.Adapter.Pulsar"
             )
             .GetResult();
@@ -67,8 +68,9 @@ public class AdapterIsolationTests
             .Should()
             .NotHaveDependencyOnAny(
                 SolutionTypes.AdapterApiNamespace,
+                SolutionTypes.AdapterRedisNamespace,
                 "ClubExample.Adapter.InMemoryData",
-                "ClubExample.Adapter.Redis",
+                "ClubExample.Adapter.gRPC",
                 "ClubExample.Adapter.Pulsar"
             )
             .GetResult();
@@ -76,6 +78,27 @@ public class AdapterIsolationTests
         // Assert
         Assert.That(result.IsSuccessful, Is.True,
             $"Adapter.PostgreSQL should only depend on Core, not on other adapters. " +
+            $"Violating types: {string.Join(", ", result?.FailingTypeNames ?? [])}");
+    }
+
+    [Test]
+    public void AdapterRedis_Should_Only_Depend_On_Core()
+    {
+        // Arrange & Act
+        var result = Types.InAssembly(SolutionTypes.AdapterRedisAssembly)
+            .Should()
+            .NotHaveDependencyOnAny(
+                SolutionTypes.AdapterApiNamespace,
+                SolutionTypes.AdapterPostgreSQLNamespace,
+                "ClubExample.Adapter.InMemoryData",
+                "ClubExample.Adapter.gRPC",
+                "ClubExample.Adapter.Pulsar"
+            )
+            .GetResult();
+
+        // Assert
+        Assert.That(result.IsSuccessful, Is.True,
+            $"Adapter.Redis should only depend on Core, not on other adapters. " +
             $"Violating types: {string.Join(", ", result?.FailingTypeNames ?? [])}");
     }
 }
