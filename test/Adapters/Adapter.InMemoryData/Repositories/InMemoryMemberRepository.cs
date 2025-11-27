@@ -29,6 +29,26 @@ public sealed class InMemoryMemberRepository : IMemberRepository
         return Task.FromResult(exists);
     }
 
+    public Task<IEnumerable<Member>> GetMembersWithExpiringSubscriptionsAsync(
+        int daysUntilExpiration, 
+        CancellationToken cancellationToken = default)
+    {
+        var cutoffDate = DateTime.UtcNow.Date.AddDays(daysUntilExpiration);
+        var today = DateTime.UtcNow.Date;
+
+        var subscriptions = _unitOfWork.GetAll<Subscription>();
+        var members = _unitOfWork.GetAll<Member>();
+
+        var result = (from member in members
+                      join subscription in subscriptions on member.SubscriptionId equals subscription.Id
+                      where subscription.EndDate >= today
+                         && subscription.EndDate <= cutoffDate
+                         && subscription.Status == "Active"
+                      select member).ToList();
+
+        return Task.FromResult<IEnumerable<Member>>(result);
+    }
+
     // Helper methods for testing
     public IReadOnlyList<Member> GetAll() => _unitOfWork.GetAll<Member>();
 }

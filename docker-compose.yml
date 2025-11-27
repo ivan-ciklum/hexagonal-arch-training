@@ -39,6 +39,65 @@ services:
       - clubexample-network
     restart: unless-stopped
 
+  host-write:
+    build:
+      context: .
+      dockerfile: src/Host.Write/Dockerfile
+    container_name: clubexample-host-write
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__ClubDatabase=Host=postgres;Database=clubexample;Username=clubuser;Password=clubpass123
+      - ConnectionStrings__Redis=redis:6379
+      - Pulsar__ServiceUrl=pulsar://pulsar:6650
+    ports:
+      - "5001:5000"  # Write host on port 5001
+    depends_on:
+      - postgres
+      - redis
+      - pulsar
+    networks:
+      - clubexample-network
+    restart: unless-stopped
+
+  host-read-1:
+    build:
+      context: .
+      dockerfile: src/Host.Read/Dockerfile
+    container_name: clubexample-host-read-1
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__ClubDatabase=Host=postgres;Database=clubexample;Username=clubuser;Password=clubpass123
+      - ConnectionStrings__Redis=redis:6379
+    ports:
+      - "5002:5000"  # Read host instance 1 on port 5002
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - clubexample-network
+    restart: unless-stopped
+
+  host-read-2:
+    build:
+      context: .
+      dockerfile: src/Host.Read/Dockerfile
+    container_name: clubexample-host-read-2
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__ClubDatabase=Host=postgres;Database=clubexample;Username=clubuser;Password=clubpass123
+      - ConnectionStrings__Redis=redis:6379
+    ports:
+      - "5003:5000"  # Read host instance 2 on port 5003
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - clubexample-network
+    restart: unless-stopped
+
 volumes:
   postgres-data:
     driver: local

@@ -27,4 +27,21 @@ public sealed class MemberRepository : IMemberRepository
         return await _context.Members
             .AnyAsync(m => m.Name == name && m.ClubId == clubId, cancellationToken);
     }
+    
+    public async Task<IEnumerable<Member>> GetMembersWithExpiringSubscriptionsAsync(
+        int daysUntilExpiration, 
+        CancellationToken cancellationToken = default)
+    {
+        var cutoffDate = DateTime.UtcNow.Date.AddDays(daysUntilExpiration);
+        var today = DateTime.UtcNow.Date;
+        
+        return await (from member in _context.Members
+                      join subscription in _context.Subscriptions 
+                      on member.SubscriptionId equals subscription.Id
+                      where subscription.EndDate >= today
+                         && subscription.EndDate <= cutoffDate
+                         && subscription.Status == "Active"
+                      select member)
+                     .ToListAsync(cancellationToken);
+    }
 }

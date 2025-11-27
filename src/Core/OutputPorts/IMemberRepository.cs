@@ -13,4 +13,9 @@ public interface IMemberRepository
     /// Checks if a member with the given name already exists in the specified club.
     /// </summary>
     Task<bool> GetExistsByNameInClubAsync(string name, Guid clubId, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Retrieves members whose subscriptions are expiring within the specified number of days.
+    /// </summary>
+    Task<IEnumerable<Member>> GetMembersWithExpiringSubscriptionsAsync(int daysUntilExpiration, CancellationToken cancellationToken = default);
 }

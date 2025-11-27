@@ -1,44 +1,14 @@
 using ClubExample.Adapter.Api.Endpoints;
-using ClubExample.Adapter.gRPC.Services;
 using ClubExample.Adapter.PostgreSQL;
 using ClubExample.Adapter.PostgreSQL.Repositories;
-using ClubExample.Adapter.Pulsar;
 using ClubExample.Adapter.Redis;
 using ClubExample.Core.InputPorts;
 using ClubExample.Core.OutputPorts;
 using ClubExample.Core.UseCases;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Enable HTTP/2 without TLS in development (required for gRPC)
-if (builder.Environment.IsDevelopment())
-{
-    builder.WebHost.ConfigureKestrel(options =>
-    {
-        // HTTP endpoint (gRPC uses HTTP/2)
-        options.ListenLocalhost(5000, listenOptions =>
-        {
-            listenOptions.Protocols = HttpProtocols.Http2;
-        });
-        
-        // HTTPS endpoint (REST + gRPC with TLS)
-        options.ListenLocalhost(5001, listenOptions =>
-        {
-            listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
-            listenOptions.UseHttps();
-        });
-    });
-}
-
-// Add gRPC services with reflection (for development/debugging)
-builder.Services.AddGrpc();
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddGrpcReflection();
-}
 
 // Add Swagger/OpenAPI support
 builder.Services.AddEndpointsApiExplorer();
@@ -46,8 +16,9 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
-        Title = "Club Management API",
+        Title = "Club Management Read API",
         Version = "v1",
+        Description = "Query-only API for read operations (CQRS Read Side)",
         Contact = new Microsoft.OpenApi.Models.OpenApiContact
         {
             Name = "Club Management Team"
@@ -76,13 +47,12 @@ builder.Services.AddDbContext<ClubDbContext>(options =>
     var connectionString = builder.Configuration.GetConnectionString("ClubDatabase")
         ?? "Host=localhost;Database=club_db;Username=postgres;Password=postgres";
     
-    options.UseNpgsql(connectionString);
+    // Read-only configuration with NoTracking for better performance
+    options.UseNpgsql(connectionString)
+           .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 });
 
-// Register Unit of Work - Centralizes transaction control
-builder.Services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<ClubDbContext>());
-
-// Register Output Ports (Repositories) - Driven Adapters
+// Register Output Ports (Repositories) - Driven Adapters - READ ONLY
 builder.Services.AddScoped<IMemberRepository, MemberRepository>();
 builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
 builder.Services.AddScoped<IClubRepository, ClubRepository>();
@@ -90,11 +60,8 @@ builder.Services.AddScoped<IClubRepository, ClubRepository>();
 // Register Redis Cache Adapter - Distributed cache infrastructure
 builder.Services.AddRedisCache(builder.Configuration);
 
-// Register Pulsar Messaging Adapter - Event-driven communication
-builder.Services.AddPulsarAdapter(builder.Configuration);
-
-// Register Input Ports (Use Cases) - Core business logic
-builder.Services.AddScoped<IRegisterMemberUseCase, RegisterMemberUseCase>();
+// Register Input Ports (Use Cases) - Core business logic - QUERIES ONLY
+builder.Services.AddScoped<IGetMembersExpiringUseCase, GetMembersExpiringUseCase>();
 
 var app = builder.Build();
 
@@ -104,9 +71,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Club Management API v1");
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Club Management Read API v1");
         options.RoutePrefix = "swagger"; // Swagger UI at /swagger
-        options.DocumentTitle = "Club Management API";
+        options.DocumentTitle = "Club Management Read API";
         options.EnableDeepLinking();
         options.DisplayRequestDuration();
     });
@@ -118,29 +85,7 @@ app.UseHttpsRedirection();
 app.MapGet("/", () => Results.Redirect("/swagger"))
     .ExcludeFromDescription();
 
-// Register REST API endpoints from Adapter.Api
-app.MapMemberEndpoints();
-
-// Register gRPC services from Adapter.gRPC
-app.MapGrpcService<MemberGrpcService>();
-
-// Map gRPC reflection service in development
-if (app.Environment.IsDevelopment())
-{
-    app.MapGrpcReflectionService();
-    
-    app.MapGet("/grpc", () => Results.Ok(new
-    {
-        message = "gRPC endpoint is available",
-        service = "MemberService",
-        methods = new[] { "RegisterMember" },
-        http2_endpoint = "http://127.0.0.1:5000",
-        https_endpoint = "https://127.0.0.1:5001",
-        reflection = "Enabled for grpcurl",
-        usage = "grpcurl -plaintext 127.0.0.1:5000 list",
-        swagger_ui = "https://127.0.0.1:5001/swagger"
-    }))
-    .WithTags("Info");
-}
+// Register REST API endpoints from Adapter.Api - QUERIES ONLY
+app.MapMemberQueryEndpoints();
 
 app.Run();

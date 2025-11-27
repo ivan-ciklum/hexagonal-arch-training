@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Host.Read": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:4094;http://localhost:4095"
+    }
+  }
+}

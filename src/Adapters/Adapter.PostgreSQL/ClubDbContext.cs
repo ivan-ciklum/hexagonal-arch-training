@@ -26,7 +26,7 @@ public sealed class ClubDbContext : DbContext, IUnitOfWork
     }
 
     // IUnitOfWork implementation
-    public async Task AddAsync<T>(T entity, CancellationToken cancellationToken = default) where T : class
+    public new async Task AddAsync<T>(T entity, CancellationToken cancellationToken = default) where T : class
     {
         await Set<T>().AddAsync(entity, cancellationToken);
     }
