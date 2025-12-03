@@ -16,6 +16,12 @@ services:
     networks:
       - clubexample-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clubuser -d clubexample"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
   redis:
     image: redis:7-alpine
@@ -25,6 +31,12 @@ services:
     networks:
       - clubexample-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
   pulsar:
     image: apachepulsar/pulsar:3.1.0
@@ -38,28 +50,74 @@ services:
     networks:
       - clubexample-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/admin/v2/clusters"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
-  host-write:
+  # Write API - Instance 1
+  host-write-1:
     build:
       context: .
       dockerfile: src/Host.Write/Dockerfile
-    container_name: clubexample-host-write
+    container_name: clubexample-host-write-1
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:5000
+      - INSTANCE_NAME=Write-Instance-1
       - ConnectionStrings__ClubDatabase=Host=postgres;Database=clubexample;Username=clubuser;Password=clubpass123
       - ConnectionStrings__Redis=redis:6379
       - Pulsar__ServiceUrl=pulsar://pulsar:6650
-    ports:
-      - "5001:5000"  # Write host on port 5001
-    depends_on:
-      - postgres
-      - redis
-      - pulsar
     networks:
       - clubexample-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      pulsar:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
+  # Write API - Instance 2
+  host-write-2:
+    build:
+      context: .
+      dockerfile: src/Host.Write/Dockerfile
+    container_name: clubexample-host-write-2
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+      - INSTANCE_NAME=Write-Instance-2
+      - ConnectionStrings__ClubDatabase=Host=postgres;Database=clubexample;Username=clubuser;Password=clubpass123
+      - ConnectionStrings__Redis=redis:6379
+      - Pulsar__ServiceUrl=pulsar://pulsar:6650
+    networks:
+      - clubexample-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      pulsar:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # Read API - Instance 1
   host-read-1:
     build:
       context: .
@@ -68,17 +126,25 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:5000
+      - INSTANCE_NAME=Read-Instance-1
       - ConnectionStrings__ClubDatabase=Host=postgres;Database=clubexample;Username=clubuser;Password=clubpass123
       - ConnectionStrings__Redis=redis:6379
-    ports:
-      - "5002:5000"  # Read host instance 1 on port 5002
-    depends_on:
-      - postgres
-      - redis
     networks:
       - clubexample-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
+  # Read API - Instance 2
   host-read-2:
     build:
       context: .
@@ -87,16 +153,53 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:5000
+      - INSTANCE_NAME=Read-Instance-2
       - ConnectionStrings__ClubDatabase=Host=postgres;Database=clubexample;Username=clubuser;Password=clubpass123
       - ConnectionStrings__Redis=redis:6379
-    ports:
-      - "5003:5000"  # Read host instance 2 on port 5003
-    depends_on:
-      - postgres
-      - redis
     networks:
       - clubexample-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Reverse Proxy - API Gateway
+  reverse-proxy:
+    build:
+      context: .
+      dockerfile: src/Host.ReverseProxy/Dockerfile
+    container_name: clubexample-reverse-proxy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:80
+    ports:
+      - "5000:80"  # Main entry point for all traffic
+    networks:
+      - clubexample-network
+    depends_on:
+      host-write-1:
+        condition: service_healthy
+      host-write-2:
+        condition: service_healthy
+      host-read-1:
+        condition: service_healthy
+      host-read-2:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 volumes:
   postgres-data:

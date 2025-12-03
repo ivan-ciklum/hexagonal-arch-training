@@ -63,6 +63,9 @@ builder.Services.AddRedisCache(builder.Configuration);
 // Register Input Ports (Use Cases) - Core business logic - QUERIES ONLY
 builder.Services.AddScoped<IGetMembersExpiringUseCase, GetMembersExpiringUseCase>();
 
+// Add health checks for monitoring and load balancer probes
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -84,6 +87,9 @@ app.UseHttpsRedirection();
 // Root endpoint - redirect to Swagger
 app.MapGet("/", () => Results.Redirect("/swagger"))
     .ExcludeFromDescription();
+
+// Health check endpoint for load balancers and monitoring
+app.MapHealthChecks("/health");
 
 // Register REST API endpoints from Adapter.Api - QUERIES ONLY
 app.MapMemberQueryEndpoints();

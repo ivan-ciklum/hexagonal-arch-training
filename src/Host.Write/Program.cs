@@ -76,6 +76,9 @@ builder.Services.AddPulsarAdapter(builder.Configuration);
 // Register Input Ports (Use Cases) - Core business logic - COMMANDS ONLY
 builder.Services.AddScoped<IRegisterMemberUseCase, RegisterMemberUseCase>();
 
+// Add health checks for monitoring and load balancer probes
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -95,6 +98,9 @@ if (app.Environment.IsDevelopment())
 // Root endpoint - redirect to Swagger
 app.MapGet("/", () => Results.Redirect("/swagger"))
     .ExcludeFromDescription();
+
+// Health check endpoint for load balancers and monitoring
+app.MapHealthChecks("/health");
 
 // Register REST API endpoints from Adapter.Api - COMMANDS ONLY
 app.MapMemberEndpoints();
