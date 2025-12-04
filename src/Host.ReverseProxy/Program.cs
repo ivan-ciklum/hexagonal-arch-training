@@ -1,6 +1,10 @@
+using ClubExample.Host.ReverseProxy.Configuration;
 using Yarp.ReverseProxy.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add OpenTelemetry instrumentation - Must be early in the pipeline
+builder.Services.AddOpenTelemetryInstrumentation(builder.Configuration, builder.Environment);
 
 // Add YARP Reverse Proxy services
 builder.Services.AddReverseProxy()

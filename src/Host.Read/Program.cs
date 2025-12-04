@@ -5,10 +5,14 @@ using ClubExample.Adapter.Redis;
 using ClubExample.Core.InputPorts;
 using ClubExample.Core.OutputPorts;
 using ClubExample.Core.UseCases;
+using ClubExample.Host.Read.Configuration;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add OpenTelemetry instrumentation - Must be early in the pipeline
+builder.Services.AddOpenTelemetryInstrumentation(builder.Configuration, builder.Environment);
 
 // Add Swagger/OpenAPI support
 builder.Services.AddEndpointsApiExplorer();

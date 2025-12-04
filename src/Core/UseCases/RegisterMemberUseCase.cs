@@ -5,6 +5,8 @@ using ClubExample.Core.InputPorts.Commands;
 using ClubExample.Core.InputPorts.Results;
 using ClubExample.Core.OutputPorts;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry.Trace;
+using System.Diagnostics;
 
 namespace ClubExample.Core.UseCases;
 
@@ -14,6 +16,8 @@ namespace ClubExample.Core.UseCases;
 /// </summary>
 public sealed class RegisterMemberUseCase : IRegisterMemberUseCase
 {
+    private static readonly ActivitySource ActivitySource = new("ClubExample.Core");
+    
     private readonly IClubRepository _clubRepository;
     private readonly IMemberRepository _memberRepository;
     private readonly ICacheRepository _cache;
@@ -48,41 +52,64 @@ public sealed class RegisterMemberUseCase : IRegisterMemberUseCase
         RegisterMemberCommand command, 
         CancellationToken cancellationToken = default)
     {
-        // Input validation
-        ArgumentNullException.ThrowIfNull(command);
-        ValidateCommand(command);
+        using var activity = ActivitySource.StartActivity("RegisterMember", ActivityKind.Internal);
+        activity?.SetTag("usecase.name", "RegisterMember");
+        activity?.SetTag("club.id", command.ClubId);
+        activity?.SetTag("member.name", command.Name);
+        activity?.SetTag("subscription.type", command.SubscriptionType);
 
-        var club = await GetClubWithCacheAsync(command.ClubId, cancellationToken)
-            ?? throw new InvalidOperationException($"Club with ID '{command.ClubId}' not found.");
-
-        var memberExists = await _memberRepository.GetExistsByNameInClubAsync(
-            command.Name, 
-            command.ClubId, 
-            cancellationToken);
-
-        if (memberExists)
+        try
         {
-            throw new InvalidOperationException(
-                $"A member with name '{command.Name}' already exists in club '{club.Name}'.");
+            // Input validation
+            ArgumentNullException.ThrowIfNull(command);
+            ValidateCommand(command);
+
+            var club = await GetClubWithCacheAsync(command.ClubId, cancellationToken)
+                ?? throw new InvalidOperationException($"Club with ID '{command.ClubId}' not found.");
+
+            activity?.SetTag("club.name", club.Name);
+
+            var memberExists = await _memberRepository.GetExistsByNameInClubAsync(
+                command.Name, 
+                command.ClubId, 
+                cancellationToken);
+
+            if (memberExists)
+            {
+                activity?.SetStatus(ActivityStatusCode.Error, "Member already exists");
+                throw new InvalidOperationException(
+                    $"A member with name '{command.Name}' already exists in club '{club.Name}'.");
+            }
+
+            var subscription = CreateSubscription(command.SubscriptionType);
+            var member = CreateMember(command, subscription.Id);
+
+            await _unitOfWork.AddAsync(subscription, cancellationToken);
+            await _unitOfWork.AddAsync(member, cancellationToken);        
+            await _unitOfWork.CommitAsync(cancellationToken);
+
+            activity?.SetTag("member.id", member.Id);
+            activity?.SetTag("subscription.id", subscription.Id);
+
+            await InvalidateClubRelatedCachesAsync(command.ClubId, cancellationToken);
+
+            await PublishMemberRegisteredEventAsync(member, subscription, command.SubscriptionType, cancellationToken);
+
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            
+            return new RegisterMemberResult(
+                MemberId: member.Id,
+                SubscriptionId: subscription.Id,
+                SubscriptionStartDate: subscription.StartDate,
+                SubscriptionEndDate: subscription.EndDate
+            );
         }
-
-        var subscription = CreateSubscription(command.SubscriptionType);
-        var member = CreateMember(command, subscription.Id);
-
-        await _unitOfWork.AddAsync(subscription, cancellationToken);
-        await _unitOfWork.AddAsync(member, cancellationToken);        
-        await _unitOfWork.CommitAsync(cancellationToken);
-
-        await InvalidateClubRelatedCachesAsync(command.ClubId, cancellationToken);
-
-        await PublishMemberRegisteredEventAsync(member, subscription, command.SubscriptionType, cancellationToken);
-
-        return new RegisterMemberResult(
-            MemberId: member.Id,
-            SubscriptionId: subscription.Id,
-            SubscriptionStartDate: subscription.StartDate,
-            SubscriptionEndDate: subscription.EndDate
-        );
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.RecordException(ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -90,18 +117,28 @@ public sealed class RegisterMemberUseCase : IRegisterMemberUseCase
     /// </summary>
     private async Task<Club?> GetClubWithCacheAsync(Guid clubId, CancellationToken cancellationToken)
     {
+        using var activity = ActivitySource.StartActivity("GetClubWithCache", ActivityKind.Internal);
+        activity?.SetTag("club.id", clubId);
+        
         var cacheKey = $"{ClubCacheKeyPrefix}{clubId}";
+        activity?.SetTag("cache.key", cacheKey);
 
         try
         {
             var cachedClub = await _cache.GetAsync<Club>(cacheKey, cancellationToken);
             if (cachedClub is not null)
             {
+                activity?.SetTag("cache.hit", true);
                 return cachedClub;
             }
+            
+            activity?.SetTag("cache.hit", false);
         }
         catch (Exception ex)
         {
+            activity?.AddEvent(new ActivityEvent("cache.read.failed", 
+                tags: new ActivityTagsCollection { ["error.message"] = ex.Message }));
+            
             _logger.LogWarning(ex,
                 "Cache read failure for club {ClubId} with key {CacheKey}. Falling back to database query. Error: {ErrorMessage}",
                 clubId, cacheKey, ex.Message);
@@ -114,9 +151,13 @@ public sealed class RegisterMemberUseCase : IRegisterMemberUseCase
             try
             {
                 await _cache.SetAsync(cacheKey, club, TimeSpan.FromMinutes(30), cancellationToken);
+                activity?.AddEvent(new ActivityEvent("cache.write.success"));
             }
             catch (Exception ex)
             {
+                activity?.AddEvent(new ActivityEvent("cache.write.failed", 
+                    tags: new ActivityTagsCollection { ["error.message"] = ex.Message }));
+                
                 _logger.LogWarning(ex,
                     "Cache write failure for club {ClubId} with key {CacheKey}. Operation will continue without caching. Error: {ErrorMessage}",
                     clubId, cacheKey, ex.Message);
@@ -132,17 +173,25 @@ public sealed class RegisterMemberUseCase : IRegisterMemberUseCase
     /// </summary>
     private async Task InvalidateClubRelatedCachesAsync(Guid clubId, CancellationToken cancellationToken)
     {
+        using var activity = ActivitySource.StartActivity("InvalidateClubCaches", ActivityKind.Internal);
+        activity?.SetTag("club.id", clubId);
+        
         var clubMembersCacheKey = $"{ClubMembersCacheKeyPrefix}{clubId}";
+        activity?.SetTag("cache.key", clubMembersCacheKey);
         
         try
         {
             await _cache.RemoveAsync(clubMembersCacheKey, cancellationToken);
+            activity?.AddEvent(new ActivityEvent("cache.invalidation.success"));
             _logger.LogInformation(
                 "Successfully invalidated cache for club members with key {CacheKey}",
                 clubMembersCacheKey);
         }
         catch (Exception ex)
         {
+            activity?.AddEvent(new ActivityEvent("cache.invalidation.failed", 
+                tags: new ActivityTagsCollection { ["error.message"] = ex.Message }));
+            
             _logger.LogWarning(ex,
                 "Cache invalidation failure for club {ClubId} with key {CacheKey}. " +
                 "The cache will expire naturally via TTL, preventing stale data indefinitely. Error: {ErrorMessage}",
@@ -225,6 +274,12 @@ public sealed class RegisterMemberUseCase : IRegisterMemberUseCase
         string subscriptionType,
         CancellationToken cancellationToken)
     {
+        using var activity = ActivitySource.StartActivity("PublishMemberRegisteredEvent", ActivityKind.Producer);
+        activity?.SetTag("messaging.system", "pulsar");
+        activity?.SetTag("messaging.destination", MemberEventsTopicName);
+        activity?.SetTag("member.id", member.Id);
+        activity?.SetTag("club.id", member.ClubId);
+        
         try
         {
             var domainEvent = new MemberRegisteredEvent
@@ -244,12 +299,18 @@ public sealed class RegisterMemberUseCase : IRegisterMemberUseCase
                 domainEvent,
                 cancellationToken);
             
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            activity?.AddEvent(new ActivityEvent("message.published"));
+            
             _logger.LogInformation(
                 "Successfully published MemberRegisteredEvent for member {MemberId} in club {ClubId} to topic {TopicName}",
                 member.Id, member.ClubId, MemberEventsTopicName);
         }
         catch (Exception ex)
         {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.RecordException(ex);
+            
             _logger.LogError(ex,
                 "Event publishing failure for member {MemberId} in club {ClubId} to topic {TopicName}. " +
                 "The member registration has been successfully saved to the database, but the event notification failed. " +

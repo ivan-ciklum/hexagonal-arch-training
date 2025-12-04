@@ -9,6 +9,17 @@
 
 	<ItemGroup>
 		<PackageReference Include="Yarp.ReverseProxy" Version="2.2.0" />
+		
+		<!-- OpenTelemetry Core -->
+		<PackageReference Include="OpenTelemetry.Api" Version="1.11.1" />
+		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.10.0" />
+		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.10.0" />
+		
+		<!-- OpenTelemetry Instrumentation -->
+		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.10.1" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.10.1" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.10.0" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="0.5.0-beta.7" />
 	</ItemGroup>
 
 </Project>

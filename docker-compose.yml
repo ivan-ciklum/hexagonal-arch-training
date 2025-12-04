@@ -57,6 +57,21 @@ services:
       retries: 10
       start_period: 30s
 
+  # Aspire Dashboard - OpenTelemetry Collector and UI
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.0
+    container_name: clubexample-aspire-dashboard
+    ports:
+      - "18888:18888"  # Dashboard UI
+      - "18889:18889"  # OTLP gRPC endpoint
+    environment:
+      - DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true
+      - ASPNETCORE_URLS=http://+:18888
+      - DOTNET_DASHBOARD_OTLP_ENDPOINT_URL=http://+:18889
+    networks:
+      - clubexample-network
+    restart: unless-stopped
+
   # Write API - Instance 1
   host-write-1:
     build:
@@ -70,6 +85,7 @@ services:
       - ConnectionStrings__ClubDatabase=Host=postgres;Database=clubexample;Username=clubuser;Password=clubpass123
       - ConnectionStrings__Redis=redis:6379
       - Pulsar__ServiceUrl=pulsar://pulsar:6650
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://aspire-dashboard:18889
     networks:
       - clubexample-network
     depends_on:
@@ -79,6 +95,8 @@ services:
         condition: service_healthy
       pulsar:
         condition: service_healthy
+      aspire-dashboard:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
@@ -100,6 +118,7 @@ services:
       - ConnectionStrings__ClubDatabase=Host=postgres;Database=clubexample;Username=clubuser;Password=clubpass123
       - ConnectionStrings__Redis=redis:6379
       - Pulsar__ServiceUrl=pulsar://pulsar:6650
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://aspire-dashboard:18889
     networks:
       - clubexample-network
     depends_on:
@@ -109,6 +128,8 @@ services:
         condition: service_healthy
       pulsar:
         condition: service_healthy
+      aspire-dashboard:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
@@ -129,6 +150,7 @@ services:
       - INSTANCE_NAME=Read-Instance-1
       - ConnectionStrings__ClubDatabase=Host=postgres;Database=clubexample;Username=clubuser;Password=clubpass123
       - ConnectionStrings__Redis=redis:6379
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://aspire-dashboard:18889
     networks:
       - clubexample-network
     depends_on:
@@ -136,6 +158,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      aspire-dashboard:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
@@ -156,6 +180,7 @@ services:
       - INSTANCE_NAME=Read-Instance-2
       - ConnectionStrings__ClubDatabase=Host=postgres;Database=clubexample;Username=clubuser;Password=clubpass123
       - ConnectionStrings__Redis=redis:6379
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://aspire-dashboard:18889
     networks:
       - clubexample-network
     depends_on:
@@ -163,6 +188,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      aspire-dashboard:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
@@ -180,6 +207,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker
       - ASPNETCORE_URLS=http://+:80
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://aspire-dashboard:18889
     ports:
       - "5000:80"  # Main entry point for all traffic
     networks:
@@ -193,6 +221,8 @@ services:
         condition: service_healthy
       host-read-2:
         condition: service_healthy
+      aspire-dashboard:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/health"]
